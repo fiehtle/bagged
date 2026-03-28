@@ -262,6 +262,13 @@ public struct EnrichmentResult: Codable, Hashable, Sendable {
     public var proposals: [EnrichmentDraftProposal]
     public var errorMessage: String?
 
+    enum CodingKeys: String, CodingKey {
+        case captureID = "captureId"
+        case status
+        case proposals
+        case errorMessage
+    }
+
     public init(captureID: UUID, status: CaptureStatus, proposals: [EnrichmentDraftProposal], errorMessage: String? = nil) {
         self.captureID = captureID
         self.status = status
@@ -311,4 +318,3 @@ public struct WidgetSnapshot: Codable, Sendable {
         self.nearbyEntries = nearbyEntries
     }
 }
-

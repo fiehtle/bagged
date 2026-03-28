@@ -49,3 +49,50 @@ final class AppDataStoreTests: XCTestCase {
     }
 }
 
+final class BaggedURLParserTests: XCTestCase {
+    func testNormalizedWebURLRejectsClipboardFragments() {
+        XCTAssertNil(BaggedURLParser.normalizedWebURL(from: "iihxjsRMKnkuaUBsaApYiEALw_wcB&ifsb=yes"))
+        XCTAssertNil(BaggedURLParser.normalizedWebURL(from: "not a url"))
+    }
+
+    func testNormalizedWebURLAcceptsAndNormalizesWebURLs() {
+        XCTAssertEqual(
+            BaggedURLParser.normalizedWebURL(from: "https://www.theinfatuation.com/san-francisco/reviews/ocean-subs")?.absoluteString,
+            "https://www.theinfatuation.com/san-francisco/reviews/ocean-subs"
+        )
+        XCTAssertEqual(
+            BaggedURLParser.normalizedWebURL(from: "www.theinfatuation.com/san-francisco/reviews/ocean-subs")?.absoluteString,
+            "https://www.theinfatuation.com/san-francisco/reviews/ocean-subs"
+        )
+    }
+}
+
+final class EnrichmentResultDecodingTests: XCTestCase {
+    func testEnrichmentResultDecodesCaptureIdPayload() throws {
+        let captureID = UUID()
+        let payload = """
+        {
+          "captureId": "\(captureID.uuidString)",
+          "status": "partially_resolved",
+          "proposals": [
+            {
+              "id": "\(UUID().uuidString)",
+              "title": "Ocean Subs",
+              "category": "food",
+              "notes": "Sandwich shop",
+              "addressLine": "18 Ocean Ave",
+              "city": "San Francisco",
+              "neighborhood": "Excelsior",
+              "confidence": 0.93,
+              "sourceExcerpt": "Tasty sandwiches"
+            }
+          ]
+        }
+        """.data(using: .utf8)!
+
+        let result = try JSONDecoder.bagged.decode(EnrichmentResult.self, from: payload)
+        XCTAssertEqual(result.captureID, captureID)
+        XCTAssertEqual(result.status, .partiallyResolved)
+        XCTAssertEqual(result.proposals.first?.title, "Ocean Subs")
+    }
+}

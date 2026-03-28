@@ -94,7 +94,11 @@ private struct QuickAddSheet: View {
                         .lineLimit(3...6)
 
                     Button("Paste From Clipboard") {
-                        urlText = UIPasteboard.general.string ?? urlText
+                        if let clipboardURL = UIPasteboard.general.url?.absoluteString {
+                            urlText = clipboardURL
+                        } else {
+                            urlText = UIPasteboard.general.string ?? urlText
+                        }
                     }
                 }
 
@@ -137,8 +141,8 @@ private struct QuickAddSheet: View {
         isImporting = true
         defer { isImporting = false }
 
-        guard let url = URL(string: urlText.trimmingCharacters(in: .whitespacesAndNewlines)) else {
-            errorMessage = "Enter a valid URL."
+        guard let url = BaggedURLParser.normalizedWebURL(from: urlText) else {
+            errorMessage = "Paste a full website URL, for example https://example.com/place."
             return
         }
 

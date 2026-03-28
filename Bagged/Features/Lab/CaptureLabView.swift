@@ -143,7 +143,7 @@ struct CaptureLabView: View {
             let payload: IncomingSharePayload
             switch inputType {
             case .url:
-                guard let url = URL(string: sourceURLText.trimmingCharacters(in: .whitespacesAndNewlines)) else {
+                guard let url = BaggedURLParser.normalizedWebURL(from: sourceURLText) else {
                     throw LabError.invalidURL
                 }
                 payload = IncomingSharePayload(
@@ -188,7 +188,7 @@ private enum LabError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .invalidURL:
-            return "Enter a valid URL before running a URL import."
+            return "Enter a full http(s) URL before running a URL import."
         }
     }
 }

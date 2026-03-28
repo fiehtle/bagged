@@ -18,6 +18,7 @@
 		2367A4280BF6CD5A9FE3DD3E /* CaptureService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5502122C3313CE585D98AC /* CaptureService.swift */; };
 		271256039BCD28D5F8F48827 /* CaptureReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB4CA895D21C1E970D15C99D /* CaptureReviewView.swift */; };
 		27EBE3FC73B7D4BD699C05B2 /* LocationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66E7C3ED47E66F3D12C7F651 /* LocationService.swift */; };
+		31914C773DF102D9027A2806 /* BaggedURLParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1397323342B5B886B3F49988 /* BaggedURLParser.swift */; };
 		33443BD5E94A96C1D3C0F4D7 /* CaptureStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9859BFC31B6CE1A5A077FF93 /* CaptureStore.swift */; };
 		4AC35D3B26F183BB6838FA62 /* PlaceResolutionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B9C2ED1D0FE246F4D2941CD /* PlaceResolutionService.swift */; };
 		52B02B6712C22B7795D667E2 /* BaggedModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4E724EECA455FAEEF7ED91D /* BaggedModels.swift */; };
@@ -95,6 +96,7 @@
 
 /* Begin PBXFileReference section */
 		06E701274BF4E9FA1DF3F8AB /* PlaceDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaceDetailView.swift; sourceTree = "<group>"; };
+		1397323342B5B886B3F49988 /* BaggedURLParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BaggedURLParser.swift; sourceTree = "<group>"; };
 		16F1DB9DC90217AA8D26F21C /* BaggedConfig.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = BaggedConfig.plist; sourceTree = "<group>"; };
 		1D5699991C6D6A2BB4501969 /* BaggedConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BaggedConfiguration.swift; sourceTree = "<group>"; };
 		1D80EB931BCD39955A3181F1 /* InboxView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboxView.swift; sourceTree = "<group>"; };
@@ -250,6 +252,7 @@
 			isa = PBXGroup;
 			children = (
 				1D5699991C6D6A2BB4501969 /* BaggedConfiguration.swift */,
+				1397323342B5B886B3F49988 /* BaggedURLParser.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -498,6 +501,7 @@
 				08DB4D67AFE765E20AC61586 /* AppDataStore.swift in Sources */,
 				22FD6C1A6D6BFC3C62FDC5B4 /* BaggedConfiguration.swift in Sources */,
 				52B02B6712C22B7795D667E2 /* BaggedModels.swift in Sources */,
+				31914C773DF102D9027A2806 /* BaggedURLParser.swift in Sources */,
 				2367A4280BF6CD5A9FE3DD3E /* CaptureService.swift in Sources */,
 				33443BD5E94A96C1D3C0F4D7 /* CaptureStore.swift in Sources */,
 				27EBE3FC73B7D4BD699C05B2 /* LocationService.swift in Sources */,
