@@ -1,0 +1,8 @@
+services:
+  - type: web
+    name: bagged-enrichment-api
+    env: node
+    rootDir: worker
+    buildCommand: npm install
+    startCommand: npm run start
+    healthCheckPath: /health

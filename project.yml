@@ -1,0 +1,90 @@
+name: Bagged
+options:
+  bundleIdPrefix: com.vietle
+  deploymentTarget:
+    iOS: "18.0"
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    CURRENT_PROJECT_VERSION: 1
+    MARKETING_VERSION: 0.1.0
+    DEVELOPMENT_ASSET_PATHS: "\"Bagged/Resources\""
+targets:
+  BaggedShared:
+    type: framework
+    platform: iOS
+    sources:
+      - Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.vietle.bagged.shared
+        GENERATE_INFOPLIST_FILE: YES
+        SKIP_INSTALL: YES
+  Bagged:
+    type: application
+    platform: iOS
+    sources:
+      - Bagged
+    dependencies:
+      - target: BaggedShared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.vietle.bagged
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: bagged needs your location to sort saved places nearby.
+        INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription: bagged stores shared screenshots so they can be reviewed later.
+        INFOPLIST_KEY_NSAppTransportSecurity_NSAllowsLocalNetworking: YES
+        CODE_SIGN_ENTITLEMENTS: Bagged/Bagged.entitlements
+        PRODUCT_NAME: bagged
+  BaggedShareExtension:
+    type: app-extension
+    platform: iOS
+    sources:
+      - BaggedShareExtension/Sources
+    dependencies:
+      - target: BaggedShared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.vietle.bagged.share
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGN_ENTITLEMENTS: BaggedShareExtension/BaggedShareExtension.entitlements
+        INFOPLIST_KEY_NSExtension_NSExtensionPointIdentifier: com.apple.share-services
+        INFOPLIST_KEY_NSExtension_NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ShareViewController
+        INFOPLIST_KEY_NSExtension_NSExtensionAttributes_NSExtensionActivationRule_NSExtensionActivationSupportsWebURLWithMaxCount: 1
+        INFOPLIST_KEY_NSExtension_NSExtensionAttributes_NSExtensionActivationRule_NSExtensionActivationSupportsImageWithMaxCount: 1
+  BaggedWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - BaggedWidget/Sources
+    dependencies:
+      - target: BaggedShared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.vietle.bagged.widget
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGN_ENTITLEMENTS: BaggedWidget/BaggedWidget.entitlements
+        INFOPLIST_KEY_NSExtension_NSExtensionPointIdentifier: com.apple.widgetkit-extension
+  BaggedTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - BaggedTests
+    dependencies:
+      - target: BaggedShared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.vietle.bagged.tests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/bagged.app/bagged
+schemes:
+  Bagged:
+    build:
+      targets:
+        Bagged: all
+        BaggedTests: [test]
+    test:
+      targets:
+        - name: BaggedTests

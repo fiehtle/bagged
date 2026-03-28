@@ -1,0 +1,11 @@
+.DS_Store
+DerivedData/
+build/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+*.xcworkspace/xcuserdata/
+xcuserdata/
+.build/
+node_modules/
+.env
+.env.local
+worker/.env
