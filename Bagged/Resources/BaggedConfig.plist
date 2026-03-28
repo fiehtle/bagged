@@ -3,6 +3,6 @@
 <plist version="1.0">
 <dict>
 	<key>BAGGED_API_BASE_URL</key>
-	<string>http://127.0.0.1:8080</string>
+	<string>https://bagged-enrichment-api.onrender.com</string>
 </dict>
 </plist>
