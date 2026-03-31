@@ -96,3 +96,51 @@ final class EnrichmentResultDecodingTests: XCTestCase {
         XCTAssertEqual(result.proposals.first?.title, "Ocean Subs")
     }
 }
+
+final class CaptureServiceTests: XCTestCase {
+    func testEnrichCaptureDoesNotFailWhenMapResolutionThrows() async throws {
+        let capture = CaptureRecord(
+            inputType: .url,
+            sourceURL: URL(string: "https://example.com/place"),
+            title: "Example"
+        )
+        let proposal = EnrichmentDraftProposal(
+            title: "Ocean Subs",
+            category: .food,
+            notes: "Sandwiches",
+            addressLine: "18 Ocean Ave",
+            city: "San Francisco",
+            neighborhood: "Excelsior",
+            confidence: 0.92,
+            sourceExcerpt: "A strong sandwich shop"
+        )
+
+        let service = await CaptureService(
+            syncClient: StubSyncClient(result: EnrichmentResult(captureID: capture.id, status: .partiallyResolved, proposals: [proposal])),
+            placeResolver: ThrowingPlaceResolver()
+        )
+
+        let drafts = try await service.enrichCapture(capture)
+        XCTAssertEqual(drafts.count, 1)
+        XCTAssertNil(drafts[0].resolvedPlace)
+        XCTAssertEqual(drafts[0].status, .needsReview)
+    }
+}
+
+private struct StubSyncClient: SyncClient {
+    let result: EnrichmentResult
+
+    func submitCapture(_ capture: CaptureRecord) async throws -> EnrichmentResult {
+        result
+    }
+
+    func confirmDraft(capture: CaptureRecord, draft: PlaceDraftRecord) async throws {}
+
+    func rejectDraft(capture: CaptureRecord, draft: PlaceDraftRecord) async throws {}
+}
+
+private struct ThrowingPlaceResolver: PlaceResolutionService {
+    func resolve(_ proposal: EnrichmentDraftProposal) async throws -> ResolvedPlace? {
+        throw NSError(domain: "MKErrorDomain", code: 2)
+    }
+}

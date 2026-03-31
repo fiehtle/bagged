@@ -142,6 +142,35 @@ test("fails loudly when no live reader is configured and no OCR text is availabl
   );
 });
 
+test("fails clearly when the scraped page returns an HTTP error", async () => {
+  const worker = new EnrichmentWorker({
+    reader: {
+      async read() {
+        return {
+          provider: "stub",
+          excerpt: "Page Not Found",
+          markdown: "# Page Not Found",
+          metadata: {
+            title: "Page Not Found",
+            description: "Missing page",
+            language: "en",
+            statusCode: 404
+          }
+        };
+      }
+    }
+  });
+
+  await assert.rejects(
+    worker.enrich({
+      id: "capture-404",
+      source_url: "https://example.com/missing",
+      raw_text: null
+    }),
+    /returned HTTP 404/
+  );
+});
+
 test("parses structured places from the OpenAI extractor", async () => {
   const extractor = new PlaceExtractor({
     apiKey: "test-key",

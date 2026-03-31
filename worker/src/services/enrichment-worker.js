@@ -42,6 +42,7 @@ export class EnrichmentWorker {
 
     try {
       const document = await this.reader.read(capture.source_url);
+      this.validateDocument(document, capture);
       if (this.isUsableDocument(document)) {
         return this.mergeRawText(document, capture.raw_text);
       }
@@ -89,5 +90,12 @@ export class EnrichmentWorker {
       markdown: [document.markdown, text].filter(Boolean).join("\n\n"),
       excerpt: document.excerpt || text
     };
+  }
+
+  validateDocument(document, capture) {
+    const statusCode = Number(document?.metadata?.statusCode);
+    if (!Number.isNaN(statusCode) && statusCode >= 400) {
+      throw new Error(`Unable to import ${capture.source_url}: the page returned HTTP ${statusCode}.`);
+    }
   }
 }

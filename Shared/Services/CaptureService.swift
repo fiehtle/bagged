@@ -37,9 +37,10 @@ public struct CaptureService {
     public func enrichCapture(_ capture: CaptureRecord) async throws -> [PlaceDraftRecord] {
         let result = try await syncClient.submitCapture(capture)
         var drafts: [PlaceDraftRecord] = []
+        let shouldResolveDuringImport = result.proposals.count == 1
 
         for proposal in result.proposals {
-            let resolvedPlace = try await placeResolver.resolve(proposal)
+            let resolvedPlace = shouldResolveDuringImport ? await resolveBestEffort(proposal) : nil
             let status: DraftStatus = proposal.confidence >= 0.85 && resolvedPlace != nil ? .autoActivated : .needsReview
 
             drafts.append(
@@ -65,17 +66,23 @@ public struct CaptureService {
 
     public func confirm(_ draft: PlaceDraftRecord, capture: CaptureRecord) async throws -> ConfirmedPlaceRecord {
         try await syncClient.confirmDraft(capture: capture, draft: draft)
+        let resolvedPlace: ResolvedPlace?
+        if let existingResolvedPlace = draft.resolvedPlace {
+            resolvedPlace = existingResolvedPlace
+        } else {
+            resolvedPlace = await resolveBestEffort(draft)
+        }
 
         return ConfirmedPlaceRecord(
             id: draft.id,
             title: draft.title,
             category: draft.category,
-            addressLine: draft.resolvedPlace?.formattedAddress ?? draft.addressLine ?? "Address pending confirmation",
+            addressLine: resolvedPlace?.formattedAddress ?? draft.addressLine ?? "Address pending confirmation",
             city: draft.city,
             neighborhood: draft.neighborhood,
             notes: draft.notes,
             confidence: draft.confidence,
-            coordinate: draft.resolvedPlace?.coordinate,
+            coordinate: resolvedPlace?.coordinate,
             sourceDomain: capture.sourceDomain,
             sourceCaptureID: capture.id
         )
@@ -83,5 +90,32 @@ public struct CaptureService {
 
     public func reject(_ draft: PlaceDraftRecord, capture: CaptureRecord) async throws {
         try await syncClient.rejectDraft(capture: capture, draft: draft)
+    }
+
+    private func resolveBestEffort(_ proposal: EnrichmentDraftProposal) async -> ResolvedPlace? {
+        do {
+            return try await placeResolver.resolve(proposal)
+        } catch {
+            #if DEBUG
+            print("Place resolution failed for proposal '\(proposal.title)': \(error)")
+            #endif
+            return nil
+        }
+    }
+
+    private func resolveBestEffort(_ draft: PlaceDraftRecord) async -> ResolvedPlace? {
+        await resolveBestEffort(
+            EnrichmentDraftProposal(
+                id: draft.id,
+                title: draft.title,
+                category: draft.category,
+                notes: draft.notes,
+                addressLine: draft.addressLine,
+                city: draft.city,
+                neighborhood: draft.neighborhood,
+                confidence: draft.confidence,
+                sourceExcerpt: draft.sourceExcerpt
+            )
+        )
     }
 }

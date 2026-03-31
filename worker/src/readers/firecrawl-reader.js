@@ -49,7 +49,8 @@ export class FirecrawlReader {
       metadata: {
         title: payload.data?.metadata?.title ?? null,
         description: payload.data?.metadata?.description ?? null,
-        language: payload.data?.metadata?.language ?? null
+        language: payload.data?.metadata?.language ?? null,
+        statusCode: payload.data?.metadata?.statusCode ?? null
       }
     };
   }
