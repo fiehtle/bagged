@@ -2,7 +2,7 @@ import { getWorkerConfiguration, ProviderUnavailableError } from "../config.js";
 
 const PLACE_CATEGORIES = ["food", "coffee", "bars", "sights", "nature", "shops", "other"];
 const CONTENT_PATTERNS = ["single_place_review", "multi_place_listicle", "social_post", "ocr_text", "unknown"];
-const MAX_DOCUMENT_CHARS = 18000;
+const MAX_DOCUMENT_CHARS = 9000;
 
 const PLACE_EXTRACTION_SCHEMA = {
   type: "object",
@@ -49,6 +49,11 @@ export class PlaceExtractor {
   }
 
   async extract(capture, document) {
+    const metadataPlaces = this.extractMetadataPlaces(document);
+    if (metadataPlaces.length > 0) {
+      return metadataPlaces;
+    }
+
     if (!this.apiKey) {
       if (!this.allowMockProviders) {
         throw new ProviderUnavailableError("openai", "BAGGED_OPENAI_API_KEY is not set");
@@ -108,6 +113,7 @@ export class PlaceExtractor {
       "- Return one object per distinct place that is positively recommended or clearly being reviewed.",
       "- For listicles or guides, return every distinct place mentioned as a recommendation.",
       "- For single-place reviews, return exactly one place when the page is clearly about one venue.",
+      "- If the content is not clearly about one or more real places, return an empty places array.",
       "- Do not invent addresses, cities, or neighborhoods.",
       "- Deduplicate repeated mentions of the same place.",
       "- Keep notes short and factual.",
@@ -143,6 +149,15 @@ export class PlaceExtractor {
     return fragments.join("\n").trim();
   }
 
+  extractMetadataPlaces(document) {
+    const places = Array.isArray(document?.metadata?.places) ? document.metadata.places : [];
+    if (places.length === 0) {
+      return [];
+    }
+
+    return this.normalizePlaces(places, null, document);
+  }
+
   normalizePlaces(places, capture, document) {
     const normalized = [];
     const seenTitles = new Set();
@@ -172,11 +187,7 @@ export class PlaceExtractor {
       });
     }
 
-    if (normalized.length > 0) {
-      return normalized;
-    }
-
-    return [this.buildFallbackProposal(capture, document, 0.35)];
+    return normalized;
   }
 
   buildFallbackProposal(capture, document, confidence) {

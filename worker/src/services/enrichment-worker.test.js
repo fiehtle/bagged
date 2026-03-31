@@ -5,12 +5,13 @@ import { PlaceExtractor } from "./place-extractor.js";
 
 test("returns multiple proposals from the generic extractor for list-style pages", async () => {
   const worker = new EnrichmentWorker({
-    reader: {
+    fallbackReader: null,
+    primaryReader: {
       async read() {
         return {
           provider: "stub",
           excerpt: "The best restaurants in San Francisco",
-          markdown: "# Best Restaurants\n## The Shota\n## Trestle\n## Pinhole Coffee",
+          markdown: "# Best Restaurants\n\nThe Shota is one of the best omakase spots in San Francisco.\n\nTrestle is a strong pasta-focused dinner option.\n\nPinhole Coffee is a neighborhood favorite for espresso and pastries.",
           metadata: {
             title: "The Best Restaurants in San Francisco",
             description: "A city guide",
@@ -75,7 +76,8 @@ test("uses OCR text when no URL is provided", async () => {
 
 test("falls back to raw text when Firecrawl fails but OCR text exists", async () => {
   const worker = new EnrichmentWorker({
-    reader: {
+    fallbackReader: null,
+    primaryReader: {
       async read() {
         throw new Error("Firecrawl unavailable");
       }
@@ -130,7 +132,9 @@ test("reports provider readiness in health status", () => {
 });
 
 test("fails loudly when no live reader is configured and no OCR text is available", async () => {
-  const worker = new EnrichmentWorker();
+  const worker = new EnrichmentWorker({
+    primaryReader: null
+  });
 
   await assert.rejects(
     worker.enrich({
@@ -144,7 +148,8 @@ test("fails loudly when no live reader is configured and no OCR text is availabl
 
 test("fails clearly when the scraped page returns an HTTP error", async () => {
   const worker = new EnrichmentWorker({
-    reader: {
+    fallbackReader: null,
+    primaryReader: {
       async read() {
         return {
           provider: "stub",
@@ -169,6 +174,54 @@ test("fails clearly when the scraped page returns an HTTP error", async () => {
     }),
     /returned HTTP 404/
   );
+});
+
+test("returns deterministic schema places without calling the llm", async () => {
+  const worker = new EnrichmentWorker({
+    fallbackReader: null,
+    primaryReader: {
+      async read() {
+        return {
+          provider: "stub",
+          excerpt: "Ocean Subs in Excelsior",
+          markdown: "Ocean Subs is a strong sandwich shop in Excelsior.",
+          metadata: {
+            title: "Ocean Subs",
+            description: "Ocean Subs in Excelsior",
+            language: "en",
+            statusCode: 200,
+            places: [
+              {
+                title: "Ocean Subs",
+                category: "food",
+                notes: "A strong sandwich shop in Excelsior.",
+                addressLine: "18 Ocean Ave, San Francisco, California 94112",
+                city: "San Francisco",
+                neighborhood: "Excelsior",
+                confidence: 0.97
+              }
+            ]
+          }
+        };
+      }
+    },
+    extractor: new PlaceExtractor({
+      apiKey: null,
+      allowMockProviders: false,
+      fetchImpl: async () => {
+        throw new Error("LLM should not be called for schema-backed pages");
+      }
+    })
+  });
+
+  const result = await worker.enrich({
+    id: "capture-metadata",
+    source_url: "https://example.com/ocean-subs",
+    raw_text: null
+  });
+
+  assert.equal(result.proposals.length, 1);
+  assert.equal(result.proposals[0].title, "Ocean Subs");
 });
 
 test("parses structured places from the OpenAI extractor", async () => {

@@ -36,6 +36,7 @@ xcodegen generate
 ```bash
 cd worker
 cp .env.example .env
+npm install
 node src/index.js
 ```
 
@@ -50,10 +51,13 @@ node src/index.js
 
 ## Worker architecture
 
-- `Firecrawl` fetches and renders the shared URL into markdown.
-- `OpenAI Responses API` converts that markdown into structured `place[]` output via a strict JSON schema.
+- `Direct HTML fetch + Readability` is the default parser path for normal article-style webpages.
+- `JSON-LD / schema.org` metadata is used first when it already contains place data, so many pages skip the LLM entirely.
+- `Firecrawl` is now a fallback reader for JS-heavy or parser-hostile pages.
+- `OpenAI Responses API` is the second-stage semantic extractor only when the deterministic pass does not already produce `place[]`.
 - `Apple Maps` resolution still happens in the app after enrichment.
 - The primary path is generic. There are no website-specific parsers in the live worker.
+- 4xx pages fail clearly instead of being treated as valid imports.
 
 ## First-pass test flow
 
@@ -71,7 +75,7 @@ Notes:
 - For simulator testing with a local worker, `http://127.0.0.1:8080` is the simplest `BAGGED_API_BASE_URL`.
 - For physical devices, use a reachable HTTPS URL such as a Render deploy or a local tunnel.
 - The worker now fails loudly if live provider keys are missing. Check `/health` before testing the app against a live worker.
-- Live enrichment requires both `BAGGED_FIRECRAWL_API_KEY` and `BAGGED_OPENAI_API_KEY`.
+- Live enrichment works best with both `BAGGED_FIRECRAWL_API_KEY` and `BAGGED_OPENAI_API_KEY`, but many schema-rich pages can now parse without needing the LLM path.
 
 ## Notes
 

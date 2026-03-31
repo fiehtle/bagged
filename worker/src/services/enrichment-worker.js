@@ -1,3 +1,4 @@
+import { DirectHtmlReader } from "../readers/direct-html-reader.js";
 import { FirecrawlReader } from "../readers/firecrawl-reader.js";
 import { PlaceExtractor } from "./place-extractor.js";
 import { CaptureStatus } from "../types/index.js";
@@ -5,11 +6,13 @@ import { getWorkerConfiguration } from "../config.js";
 
 export class EnrichmentWorker {
   constructor({
-    reader = new FirecrawlReader(),
+    primaryReader = new DirectHtmlReader(),
+    fallbackReader = new FirecrawlReader(),
     configuration = getWorkerConfiguration(),
     extractor = new PlaceExtractor()
   } = {}) {
-    this.reader = reader;
+    this.primaryReader = primaryReader;
+    this.fallbackReader = fallbackReader;
     this.configuration = configuration;
     this.extractor = extractor;
   }
@@ -17,6 +20,10 @@ export class EnrichmentWorker {
   async enrich(capture) {
     const document = await this.loadDocument(capture);
     const proposals = await this.extractor.extract(capture, document);
+    if (proposals.length === 0) {
+      throw new Error(`No places found in ${capture.source_url ?? "this capture"}.`);
+    }
+
     return {
       captureId: capture.id,
       status: proposals.length > 1 ? CaptureStatus.NEEDS_REVIEW : CaptureStatus.PARTIALLY_RESOLVED,
@@ -40,29 +47,38 @@ export class EnrichmentWorker {
       return this.buildRawTextDocument(capture.raw_text);
     }
 
-    try {
-      const document = await this.reader.read(capture.source_url);
-      this.validateDocument(document, capture);
-      if (this.isUsableDocument(document)) {
-        return this.mergeRawText(document, capture.raw_text);
-      }
-    } catch (error) {
-      if (capture.raw_text?.trim()) {
-        return this.buildRawTextDocument(capture.raw_text);
-      }
+    const readers = [this.primaryReader, this.fallbackReader].filter(Boolean);
+    let lastError = null;
 
-      throw error;
+    for (const reader of readers) {
+      try {
+        const document = await reader.read(capture.source_url);
+        this.validateDocument(document, capture);
+        if (this.isUsableDocument(document)) {
+          return this.mergeRawText(document, capture.raw_text);
+        }
+      } catch (error) {
+        lastError = error;
+      }
     }
 
     if (capture.raw_text?.trim()) {
       return this.buildRawTextDocument(capture.raw_text);
     }
 
-    throw new Error(`Unable to read ${capture.source_url}: Firecrawl returned empty content`);
+    if (lastError) {
+      throw lastError;
+    }
+
+    throw new Error(`Unable to read ${capture.source_url}: no parser returned usable content`);
   }
 
   isUsableDocument(document) {
-    return Boolean(document?.markdown?.trim());
+    if (Array.isArray(document?.metadata?.places) && document.metadata.places.length > 0) {
+      return true;
+    }
+
+    return (document?.markdown?.trim()?.length ?? 0) >= 120;
   }
 
   buildRawTextDocument(rawText) {
@@ -96,6 +112,12 @@ export class EnrichmentWorker {
     const statusCode = Number(document?.metadata?.statusCode);
     if (!Number.isNaN(statusCode) && statusCode >= 400) {
       throw new Error(`Unable to import ${capture.source_url}: the page returned HTTP ${statusCode}.`);
+    }
+
+    const title = String(document?.metadata?.title ?? "").toLowerCase();
+    const excerpt = String(document?.excerpt ?? "").toLowerCase();
+    if (/page not found|not found|404/.test(title) && /page not found|not found|404/.test(excerpt)) {
+      throw new Error(`Unable to import ${capture.source_url}: the page appears to be missing.`);
     }
   }
 }
